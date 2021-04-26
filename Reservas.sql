@@ -30,6 +30,7 @@ BEGIN
 END;
 /
 --Pruebo el consultar disponibilidad no funciona        
+/*
 DECLARE 
      v_disponibilidad VARCHAR2(40);
 BEGIN
@@ -37,7 +38,7 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('Para la pista 004 el dia 6 de Julio de 2012 hay disponibilidad a las horas: ' || v_disponibilidad);
 END;
 /
-
+*/
 --RESERVAR UNA PISTA falta control de errores como que no exista el socio y arreglar funcion consultar disponibilidad para limpir codigo
 CREATE OR REPLACE PROCEDURE hacer_reserva (v_dia NUMBER, v_mes NUMBER, v_anyo NUMBER, v_hora NUMBER ,v_socio NUMBER, v_pista CHAR, v_luz VARCHAR2, v_pago VARCHAR2 ) IS
     v_nombre_socio VARCHAR2(20);
@@ -73,7 +74,7 @@ BEGIN
             DBMS_OUTPUT.PUT_LINE('SIN LUZ');
         END IF;
         DBMS_OUTPUT.PUT_LINE('TIPO DE PAGO: '|| v_pago);
-        DBMS_OUTPUT.PUT_LINE('PRECIO: ' || v_precio);
+        DBMS_OUTPUT.PUT_LINE('PRECIO: ' || v_precio || '€');
     ELSE
         DBMS_OUTPUT.PUT_LINE('No hay disponibilidad');
     END IF;
@@ -85,13 +86,16 @@ EXCEPTION
 END;
 /
 
+/*
 --Prueba de hora no valida 
 EXEC hacer_reserva (3,4,2013,5,'12345678', '001', 'CON', 'PayPal' );
 --Prueba socio no encontrado
 EXEC hacer_reserva (3,4,2013,10,'00345678', '001', 'CON', 'PayPal' );
---Prueba valida (no funciona por el error en el not in)
+--Prueba hora reservada (no funciona, pasa el not in)
+EXEC hacer_reserva(5,5,2012,18,'12345678', '004', 'CON', 'PayPal');
+--Prueba valida 
 EXEC hacer_reserva (3,4,2013,10,'12345678', '001', 'CON', 'PayPal' );
-
+*/
 
 --FACTURA DE SOCIO 
 
@@ -100,26 +104,29 @@ CREATE OR REPLACE PROCEDURE factura_socio (nombre_socio VARCHAR2) IS
     v_num_abonados NUMBER;
     v_antiguedad NUMBER;
     v_precio NUMBER;
+    v_tarifa NUMBER;
 BEGIN
+    --Variable de tarifa de socio 
+    v_tarifa := 100;
     --Funcion que devuelve el numero de socio y si no lo encuentra devuelve -1
     v_num_socio := buscar_num_socio(nombre_socio);
     IF  v_num_socio=-1 THEN
           DBMS_OUTPUT.PUT_LINE('Error: Socio no encontrado');
     ELSE
-        v_precio := 100;
+        v_precio := v_tarifa;
         --Recojo antiguedad
         SELECT antiguedad INTO v_antiguedad FROM socio WHERE n_socio=v_num_socio;
         --Recojo numero de abonados de ese socio
         SELECT COUNT(n_abonado) INTO v_num_abonados FROM abonado WHERE n_socio=v_num_socio;
         DBMS_OUTPUT.PUT_LINE('FACTURA DE SOCIO:');
-        DBMS_OUTPUT.PUT_LINE('Nº Socio:' || v_num_socio);
+        DBMS_OUTPUT.PUT_LINE('Nº Socio: ' || v_num_socio);
         DBMS_OUTPUT.PUT_LINE('Antiguedad: '|| v_antiguedad);
-        DBMS_OUTPUT.PUT_LINE('Tarifa: 100€');
+        DBMS_OUTPUT.PUT_LINE('Tarifa: ' || v_tarifa ||'€');
         
         --Cntrolo el plus por superar los 5 abonados 
         IF v_num_abonados>5 THEN
-        DBMS_OUTPUT.PUT_LINE('Plus (10€ por abonados de más):' || 10*v_num_abonados || '€');
-        v_precio := v_precio +  10*v_num_abonados;
+        DBMS_OUTPUT.PUT_LINE('Plus (10€ por abonados de más):' || 10*(v_num_abonados-5) || '€');
+        v_precio := v_precio +  10*(v_num_abonados-5);
         END IF;
         
         --Controlo los descuentos por antiguedad
@@ -135,10 +142,10 @@ BEGIN
 END;
 /
 
-
-
-
-
+/*
+--Prueba
+EXEC factura_socio('José Duran');
+*/
 
 
 
