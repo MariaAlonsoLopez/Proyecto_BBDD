@@ -7,27 +7,10 @@ CREATE OR REPLACE PROCEDURE alta_socio ( n_socio NUMBER, nombre VARCHAR2) IS
 BEGIN
     SELECT MAX(antiguedad)+1 INTO v_antiguedad FROM socio;
     INSERT INTO SOCIO (N_SOCIO, NOMBRE,ANTIGUEDAD) VALUES ( n_socio, nombre, v_antiguedad);
+    --Mensaje
 END;
 /
 -----------------------------------------------------------------------------------------------
-
-CREATE OR REPLACE PROCEDURE alta_abonado (n_abonado NUMBER, dni VARCHAR2, nombre VARCHAR2, parentesco VARCHAR2, edad NUMBER, nombre_socio VARCHAR2, fecha_ingreso DATE) IS
-    v_numSocio NUMBER;
-    error_paren EXCEPTION;
-BEGIN 
-    v_numSocio := buscar_num_socio (nombre_socio);
-    IF parentesco NOT IN ('PRINCIPAL','HIJO/A','PAREJA','MADRE','PADRE', 'OTRO' ) THEN 
-        RAISE error_paren;
-    END IF;
-    INSERT INTO ABONADO (N_ABONADO, DNI, NOMBRE, PARENTESCO, EDAD, FECHA_INGRESO, N_SOCIO) VALUES (n_abonado, dni, nombre, parentesco, edad, fecha_ingreso, v_numSocio);
-EXCEPTION 
-    WHEN NO_DATA_FOUND THEN
-         DBMS_OUTPUT.PUT_LINE('Error: Socio no encontrado');
-    WHEN error_paren THEN
-       DBMS_OUTPUT.PUT_LINE('Parentesco debe ser: PRINCIPAL, HIJO/A, PAREJA, MADRE, PADRE, OTRO'); 
-END;
-/
-
 --Esta funcion devuelve el numero de socio del socio con el nombre pasado.
 CREATE OR REPLACE FUNCTION buscar_num_socio (nombre_socio VARCHAR2) RETURN NUMBER IS 
     v_numSocio NUMBER;
@@ -54,6 +37,23 @@ BEGIN
 END;
 /
 */
+CREATE OR REPLACE PROCEDURE alta_abonado (n_abonado NUMBER, dni VARCHAR2, nombre VARCHAR2, parentesco VARCHAR2, edad NUMBER, nombre_socio VARCHAR2, fecha_ingreso DATE) IS
+    v_numSocio NUMBER;
+    error_paren EXCEPTION;
+BEGIN 
+    v_numSocio := buscar_num_socio (nombre_socio);
+    IF parentesco NOT IN ('PRINCIPAL','HIJO/A','PAREJA','MADRE','PADRE', 'OTRO' ) THEN 
+        RAISE error_paren;
+    END IF;
+    INSERT INTO ABONADO (N_ABONADO, DNI, NOMBRE, PARENTESCO, EDAD, FECHA_INGRESO, N_SOCIO) VALUES (n_abonado, dni, nombre, parentesco, edad, fecha_ingreso, v_numSocio);
+EXCEPTION 
+    WHEN NO_DATA_FOUND THEN
+         DBMS_OUTPUT.PUT_LINE('Error: Socio no encontrado');
+    WHEN error_paren THEN
+       DBMS_OUTPUT.PUT_LINE('Parentesco debe ser: PRINCIPAL, HIJO/A, PAREJA, MADRE, PADRE, OTRO'); 
+END;
+/
+
  ----------------------------------------------------------
  --Lanzar error cuando el puesto no este bien definido
 CREATE OR REPLACE PROCEDURE alta_empleado (n_empleado NUMBER, nombre VARCHAR2, dni VARCHAR2, telefono NUMBER, puesto VARCHAR2, dato_espe VARCHAR2) IS

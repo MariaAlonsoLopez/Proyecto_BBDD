@@ -18,12 +18,12 @@ BEGIN
         LOOP
             FETCH c_reservas INTO r_reservas;
             EXIT WHEN c_reservas%NOTFOUND; 
-                v_reservado := v_reservado +', ' + r_reservas.hora;
+                v_reservado := v_reservado ||', ' || r_reservas.hora;
         END LOOP;
     CLOSE c_reservas; 
     FOR i IN 9..21 LOOP
         IF i NOT IN (v_reservado) THEN 
-            v_disponible := v_disponible +', '+i;
+            v_disponible := v_disponible ||', '||i;
         END IF;
     END LOOP;
     RETURN v_disponible;
