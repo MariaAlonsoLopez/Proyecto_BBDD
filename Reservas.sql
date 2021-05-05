@@ -18,19 +18,27 @@ BEGIN
         LOOP
             FETCH c_reservas INTO r_reservas;
             EXIT WHEN c_reservas%NOTFOUND; 
-                v_reservado := v_reservado ||', ' || r_reservas.hora;
+                v_reservado := v_reservado ||  r_reservas.hora;
+                 v_reservado := v_reservado || ', ';
         END LOOP;
+        v_reservado := v_reservado || 1;
     CLOSE c_reservas; 
     FOR i IN 9..21 LOOP
+    --Aqui llega
+    DBMS_OUTPUT.PUT_LINE( v_reservado || ' '||i);
         IF i NOT IN (v_reservado) THEN 
+        --pero aqui no por lo que el fallo tiene que estar en el if 
             v_disponible := v_disponible ||', '||i;
         END IF;
     END LOOP;
     RETURN v_disponible;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Ocurrió el error ' || SQLCODE ||' mensaje: ' || SQLERRM); 
 END;
 /
 --Pruebo el consultar disponibilidad no funciona        
-/*
+
 DECLARE 
      v_disponibilidad VARCHAR2(40);
 BEGIN
@@ -38,7 +46,7 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('Para la pista 004 el dia 6 de Julio de 2012 hay disponibilidad a las horas: ' || v_disponibilidad);
 END;
 /
-*/
+
 --RESERVAR UNA PISTA falta control de errores como que no exista el socio y arreglar funcion consultar disponibilidad para limpir codigo
 CREATE OR REPLACE PROCEDURE hacer_reserva (v_dia NUMBER, v_mes NUMBER, v_anyo NUMBER, v_hora NUMBER ,v_socio NUMBER, v_pista CHAR, v_luz VARCHAR2, v_pago VARCHAR2 ) IS
     v_nombre_socio VARCHAR2(20);
@@ -121,11 +129,11 @@ BEGIN
         DBMS_OUTPUT.PUT_LINE('FACTURA DE SOCIO:');
         DBMS_OUTPUT.PUT_LINE('Nº Socio: ' || v_num_socio);
         DBMS_OUTPUT.PUT_LINE('Antiguedad: '|| v_antiguedad);
-        DBMS_OUTPUT.PUT_LINE('Tarifa: ' || v_tarifa ||'€');
+        DBMS_OUTPUT.PUT_LINE('Tarifa: ' || TRIM(TO_CHAR(v_tarifa,'999G990D99L')) );
         
         --Cntrolo el plus por superar los 5 abonados 
         IF v_num_abonados>5 THEN
-        DBMS_OUTPUT.PUT_LINE('Plus (10€ por abonados de más):' || 10*(v_num_abonados-5) || '€');
+        DBMS_OUTPUT.PUT_LINE('Plus (10€ por abonados de más):' || TRIM(TO_CHAR(10*(v_num_abonados-5),'999G990D99L')) );
         v_precio := v_precio +  10*(v_num_abonados-5);
         END IF;
         
@@ -137,7 +145,7 @@ BEGIN
              DBMS_OUTPUT.PUT_LINE('Descuento por antiguedad: -10%');
              v_precio := v_precio - (v_precio*0.10);
         END IF;
-         DBMS_OUTPUT.PUT_LINE('TOTAL: ' || v_precio);
+         DBMS_OUTPUT.PUT_LINE('TOTAL: ' || TRIM(TO_CHAR(v_precio,'999G990D99L')));
     END IF;
 END;
 /

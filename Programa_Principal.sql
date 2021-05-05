@@ -6,7 +6,7 @@ SET SERVEROUTPUT ON;
 DECLARE 
     v_opcion NUMBER;
 BEGIN
-    v_opcion := 6;
+    v_opcion := 12;
     CASE v_opcion
     --(1)Dar de alta a un socio.   
         WHEN 1 THEN  alta_socio(10234321, 'Fabio Palacios');
@@ -18,7 +18,6 @@ BEGIN
     --Revisar 
         WHEN 4 THEN DBMS_OUTPUT.PUT_LINE('Para la pista 004 el dia 6 de Julio de 2012 hay disponibilidad a las horas: ' || consultar_disponibilidad(5,5,2012,'004'));
     --(5)Hacer una reserva.
-    --Formatear precio to_char
         WHEN 5 THEN hacer_reserva (3,4,2013,10,'12345678', '001', 'CON', 'PayPal' );
     --(6)Sacar factura de un socio.
         WHEN 6 THEN factura_socio('José Duran');   

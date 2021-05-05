@@ -7,7 +7,10 @@ CREATE OR REPLACE PROCEDURE alta_socio ( n_socio NUMBER, nombre VARCHAR2) IS
 BEGIN
     SELECT MAX(antiguedad)+1 INTO v_antiguedad FROM socio;
     INSERT INTO SOCIO (N_SOCIO, NOMBRE,ANTIGUEDAD) VALUES ( n_socio, nombre, v_antiguedad);
-    --Mensaje
+     DBMS_OUTPUT.PUT_LINE('Socio registrado correctamente');
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Ocurrió el error ' || SQLCODE ||' mensaje: ' || SQLERRM);   
 END;
 /
 -----------------------------------------------------------------------------------------------
@@ -42,20 +45,24 @@ CREATE OR REPLACE PROCEDURE alta_abonado (n_abonado NUMBER, dni VARCHAR2, nombre
     error_paren EXCEPTION;
 BEGIN 
     v_numSocio := buscar_num_socio (nombre_socio);
-    IF parentesco NOT IN ('PRINCIPAL','HIJO/A','PAREJA','MADRE','PADRE', 'OTRO' ) THEN 
-        RAISE error_paren;
+    IF v_numSocio=-1 THEN
+        DBMS_OUTPUT.PUT_LINE('Error: Socio no encontrado');
+    ELSE
+        IF parentesco NOT IN ('PRINCIPAL','HIJO/A','PAREJA','MADRE','PADRE', 'OTRO' ) THEN 
+            RAISE error_paren;
+        END IF;
+        INSERT INTO ABONADO (N_ABONADO, DNI, NOMBRE, PARENTESCO, EDAD, FECHA_INGRESO, N_SOCIO) VALUES (n_abonado, dni, nombre, parentesco, edad, fecha_ingreso, v_numSocio);
+        DBMS_OUTPUT.PUT_LINE('Abonado registrado correctamente');
     END IF;
-    INSERT INTO ABONADO (N_ABONADO, DNI, NOMBRE, PARENTESCO, EDAD, FECHA_INGRESO, N_SOCIO) VALUES (n_abonado, dni, nombre, parentesco, edad, fecha_ingreso, v_numSocio);
-EXCEPTION 
-    WHEN NO_DATA_FOUND THEN
-         DBMS_OUTPUT.PUT_LINE('Error: Socio no encontrado');
+EXCEPTION          
     WHEN error_paren THEN
-       DBMS_OUTPUT.PUT_LINE('Parentesco debe ser: PRINCIPAL, HIJO/A, PAREJA, MADRE, PADRE, OTRO'); 
+        DBMS_OUTPUT.PUT_LINE('Parentesco debe ser: PRINCIPAL, HIJO/A, PAREJA, MADRE, PADRE, OTRO'); 
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Ocurrió el error ' || SQLCODE ||' mensaje: ' || SQLERRM); 
 END;
 /
-
  ----------------------------------------------------------
- --Lanzar error cuando el puesto no este bien definido
+ --Lanza error cuando el puesto no este bien definido
 CREATE OR REPLACE PROCEDURE alta_empleado (n_empleado NUMBER, nombre VARCHAR2, dni VARCHAR2, telefono NUMBER, puesto VARCHAR2, dato_espe VARCHAR2) IS
     error_puesto EXCEPTION;
     error_dato EXCEPTION;
@@ -75,6 +82,7 @@ BEGIN
         WHEN 'MANTENIMIENTO' THEN INSERT INTO MANTENIMIENTO VALUES(n_empleado, dato_espe);
         WHEN 'RESTAURANTE' THEN INSERT INTO RESTAURANTE VALUES(n_empleado, dato_espe);
     END CASE;
+    DBMS_OUTPUT.PUT_LINE('Empleado registrado correctamente');
 EXCEPTION
     WHEN error_puesto THEN 
         DBMS_OUTPUT.PUT_LINE('Puesto debe ser : MONITOR, MANTENIMIENTO, RETAURANTE');
@@ -82,8 +90,12 @@ EXCEPTION
         DBMS_OUTPUT.PUT_LINE('Especialidad debe ser : ELECTRICIDAD, FONTANERIA, JARDINERIA');
     WHEN error_dato2 THEN
         DBMS_OUTPUT.PUT_LINE('Labor debe ser : COCINA, SALON, LIMPIEZA');
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Ocurrió el error ' || SQLCODE ||' mensaje: ' || SQLERRM); 
 END;
 /
+
+EXEC alta_empleado(13535645, 'Jorge Nuñez', '12564852P', 633245854, 'RESTAURANTE','COCINA');
 
 --#################################### BAJAS ################################################################
 
@@ -103,9 +115,12 @@ BEGIN
     --Para controlar que exista el abonado
     SELECT nombre INTO v_nombre FROM abonado WHERE n_abonado=num_abonado;
     DELETE FROM ABONADO WHERE n_abonado=num_abonado;
+    DBMS_OUTPUT.PUT_LINE('Abonado eliminado correctamente');
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
           DBMS_OUTPUT.PUT_LINE('Error: Abonado no encontrado');
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Ocurrió el error ' || SQLCODE ||' mensaje: ' || SQLERRM); 
 END;
 /
 
@@ -121,7 +136,12 @@ CREATE OR REPLACE TRIGGER borrado_socio
 BEGIN 
     DELETE FROM RESERVA WHERE N_SOCIO= :OLD.N_SOCIO;
     DELETE FROM ABONADO WHERE N_SOCIO= :OLD.N_SOCIO;
+    --NO llega por lo que el fallo esta en borrado de abonado
+        DBMS_OUTPUT.PUT_LINE('LLega');
     UPDATE SOCIO SET ANTIGUEDAD = ANTIGUEDAD-1 WHERE ANTIGUEDAD> :OLD.ANTIGUEDAD;
+EXCEPTION 
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('1Ocurrió el error ' || SQLCODE ||' mensaje: ' || SQLERRM);
 END borrado_socio;
 /
 
@@ -132,9 +152,12 @@ BEGIN
     --Para controlar que exista el socio
     SELECT nombre INTO v_nombre FROM socio WHERE n_socio=num_socio;
     DELETE FROM SOCIO WHERE n_socio=num_socio;
+    DBMS_OUTPUT.PUT_LINE('Socio eliminado correctamente');
 EXCEPTION 
     WHEN NO_DATA_FOUND THEN
         DBMS_OUTPUT.PUT_LINE('Error: Socio no encontrado');
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Ocurrió el error ' || SQLCODE ||' mensaje: ' || SQLERRM); 
 END;
 /
 ------------------------------------------------
@@ -154,6 +177,9 @@ BEGIN
     ELSE 
         DELETE FROM RESTAURANTE WHERE N_EMPLEADO=:OLD.N_EMPLEADO;
     END IF;
+EXCEPTION 
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Ocurrió el error ' || SQLCODE ||' mensaje: ' || SQLERRM);
 END borrado_empleado;
 /
 
@@ -163,9 +189,12 @@ BEGIN
     --Para controlar que exista el empleado
     SELECT nombre INTO v_nombre FROM empleado WHERE n_empleado=num_emple;
     DELETE FROM EMPLEADO WHERE n_empleado=num_emple;
+     DBMS_OUTPUT.PUT_LINE('Empleado eliminado correctamente');
 EXCEPTION 
     WHEN NO_DATA_FOUND THEN
         DBMS_OUTPUT.PUT_LINE('Error: Empleado no encontrado');
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Ocurrió el error ' || SQLCODE ||' mensaje: ' || SQLERRM);
 END;
 /
 
