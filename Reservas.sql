@@ -8,29 +8,47 @@ RETURN VARCHAR2 IS
 
     v_disponible VARCHAR2(40);
     v_reservado VARCHAR(40);
+    v_i VARCHAR2(2);
+    v_libre_total BOOLEAN;
     CURSOR c_reservas (re_dia NUMBER, re_mes NUMBER, re_anyo NUMBER, re_pista CHAR) IS
         SELECT hora FROM reserva WHERE dia=re_dia AND mes=re_mes AND anyo=re_anyo AND n_pista=re_pista;
     r_reservas c_reservas%ROWTYPE;
 BEGIN
     v_disponible := '';
     v_reservado := '';
+    v_libre_total := TRUE;
     OPEN c_reservas(v_dia, v_mes, v_anyo, v_pista);
         LOOP
             FETCH c_reservas INTO r_reservas;
             EXIT WHEN c_reservas%NOTFOUND; 
+                IF r_reservas.hora <10 THEN 
+                v_reservado := v_reservado || 0;
+                END IF;
                 v_reservado := v_reservado ||  r_reservas.hora;
-                 v_reservado := v_reservado || ', ';
+                 v_reservado := v_reservado || ',';
+                 v_libre_total:=FALSE;
         END LOOP;
-        v_reservado := v_reservado || 1;
+        IF v_libre_total THEN
+            v_reservado := 23;
+            END IF;
+        --Hago SUBSTR para quitar la ultima coma 
+       v_reservado:= SUBSTR(v_reservado,1, length(v_reservado)-1);
     CLOSE c_reservas; 
+    
     FOR i IN 9..21 LOOP
-    --Aqui llega
-    DBMS_OUTPUT.PUT_LINE( v_reservado || ' '||i);
-        IF i NOT IN (v_reservado) THEN 
-        --pero aqui no por lo que el fallo tiene que estar en el if 
-            v_disponible := v_disponible ||', '||i;
+     --Este if es para controlar si el valor es menor de 10 que le añada un cero asi no confunde el 19 con el 9 
+        IF i<10 THEN
+            v_i:='0'||i;
+        ELSE
+            v_i:=i;
+        END IF;
+        --Condicion de que si v_i no esta en v_reservado que añada v_i 
+        IF  INSTR(v_reservado,v_i,1)=0 THEN 
+            v_disponible := v_disponible||v_i ||',';
         END IF;
     END LOOP;
+    --Hago de nuevo SUBSTR para quitar la ultima coma
+    v_disponible := SUBSTR(v_disponible,1, length(v_disponible)-1);
     RETURN v_disponible;
 EXCEPTION
     WHEN OTHERS THEN
@@ -38,11 +56,11 @@ EXCEPTION
 END;
 /
 --Pruebo el consultar disponibilidad no funciona        
-
 DECLARE 
      v_disponibilidad VARCHAR2(40);
 BEGIN
-    v_disponibilidad := consultar_disponibilidad(5,5,2012,'004');
+    --v_disponibilidad := consultar_disponibilidad(5,5,2012,'004');
+    v_disponibilidad := consultar_disponibilidad(3,4,2013,'001');
     DBMS_OUTPUT.PUT_LINE('Para la pista 004 el dia 6 de Julio de 2012 hay disponibilidad a las horas: ' || v_disponibilidad);
 END;
 /
@@ -51,7 +69,7 @@ END;
 CREATE OR REPLACE PROCEDURE hacer_reserva (v_dia NUMBER, v_mes NUMBER, v_anyo NUMBER, v_hora NUMBER ,v_socio NUMBER, v_pista CHAR, v_luz VARCHAR2, v_pago VARCHAR2 ) IS
     v_nombre_socio VARCHAR2(20);
     v_precio NUMBER;
-    v_reservado VARCHAR(40);
+    v_disponible VARCHAR(40);
     error_limite_horas EXCEPTION;
 BEGIN
     --Aqui cotrolo que la hora solicitada este en el rango permitido
@@ -61,10 +79,9 @@ BEGIN
     --Aqui controlo que exista el socio ademas de conseguir el nombre a partir de su codigo.
     SELECT nombre into v_nombre_socio FROM socio WHERE n_socio=v_socio;
     v_precio := 0;
-    v_reservado := consultar_disponibilidad(v_dia,v_mes,v_anyo,v_pista);
-    --Este if es para controlar si la hora que reserva esta ya reservada si esta reservada simplemente dice que no hay disponibilidad
-    --Pero no se como controlarlo entonces porque v_hora es un number y v_reservado un VARCHAR2
-    IF v_hora NOT IN (v_reservado) THEN 
+    v_disponible := consultar_disponibilidad(v_dia,v_mes,v_anyo,v_pista);
+    --Este if es para controlar si la hora que reserva esta ya reservada, si esta reservada simplemente dice que no hay disponibilidad
+    IF INSTR(v_disponible,v_hora,1)!=0 THEN 
         --Aqui obtengo el precio de esa pista en concreto
         SELECT precio INTO v_precio FROM pista WHERE n_pista=v_pista;
         --Hago el insert en la tabla reserva
@@ -94,7 +111,7 @@ EXCEPTION
 END;
 /
 
-/*
+
 --Prueba de hora no valida 
 EXEC hacer_reserva (3,4,2013,5,'12345678', '001', 'CON', 'PayPal' );
 --Prueba socio no encontrado
@@ -103,7 +120,6 @@ EXEC hacer_reserva (3,4,2013,10,'00345678', '001', 'CON', 'PayPal' );
 EXEC hacer_reserva(5,5,2012,18,'12345678', '004', 'CON', 'PayPal');
 --Prueba valida 
 EXEC hacer_reserva (3,4,2013,10,'12345678', '001', 'CON', 'PayPal' );
-*/
 
 --FACTURA DE SOCIO 
 
